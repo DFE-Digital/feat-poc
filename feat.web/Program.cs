@@ -21,10 +21,6 @@ builder.Services.AddGovUkFrontend(options =>
 {
     options.Rebrand = true;
     options.FrontendPackageHostingOptions = FrontendPackageHostingOptions.None;
-#pragma warning disable CS0618 // Type or member is obsolete
-    options.CompiledContentPath = "/js";
-#pragma warning restore CS0618 // Type or member is obsolete
-    options.StaticAssetsContentPath = "/assets";
 });
 builder.Services.AddRazorPages().AddJsonOptions(options =>
 {

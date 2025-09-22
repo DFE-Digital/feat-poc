@@ -134,10 +134,7 @@ public class SearchService: ISearchService
                         },
                         
                     },
-                    SemanticSearch = new SemanticSearchOptions()
-                    {
-                        Debug = request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled
-                    },
+                    Debug = request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled,
                     SearchFields =
                     {
                         nameof(AiSearchCourse.COURSE_NAME), 
