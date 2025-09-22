@@ -5,7 +5,7 @@
 @use '../../node_modules/dfe-frontend/packages/dfefrontend' as dfe;
 
 // Import MOJ
-@use '../../node_modules/@ministryofjustice/frontend/moj/all' as moj;
+@forward "../../node_modules/@ministryofjustice/frontend/moj/all";
 
 // Override font
 @import url('https://rsms.me/inter/inter.css');

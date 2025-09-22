@@ -38,7 +38,7 @@ task('moj-assets', function() {
 });
 
 task("sass", function () {
-    return src(paths.src + '/scss/**/*.scss')
+    return src(paths.src + '/scss/*.scss')
         .pipe(sourcemaps.init())
         .pipe(sass({
             // style: 'compressed',
