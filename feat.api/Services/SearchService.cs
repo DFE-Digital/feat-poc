@@ -1,6 +1,9 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Azure;
 using Azure.AI.OpenAI;
+using Azure.Core.Serialization;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using feat.api.Configuration;
@@ -24,12 +27,32 @@ public class SearchService: ISearchService
     public SearchService(IOptionsMonitor<AzureOptions> options, HttpClientRepository httpClientRepository)
     {
         _azureOptions = options.CurrentValue;
+        
+        // Setup serializer options
+        JsonSerializerOptions serializerOptions = new JsonSerializerOptions
+        {
+            Converters =
+            {
+                new JsonStringEnumConverter(),
+                new MicrosoftSpatialGeoJsonConverter()
+            }
+        };
+
+        
             
         // Setup search client
         Uri searchEndpoint = new Uri(_azureOptions.AISearchURL);
         AzureKeyCredential searchCredential = new AzureKeyCredential(_azureOptions.AISearchKey);
-        SearchClientOptions searchClientOptions = new SearchClientOptions();
-        searchClientOptions.Diagnostics.IsLoggingContentEnabled = true;
+        SearchClientOptions searchClientOptions = new SearchClientOptions
+        {
+            Serializer = new JsonObjectSerializer(serializerOptions),
+            Diagnostics =
+            {
+                IsLoggingContentEnabled = true,
+                IsTelemetryEnabled = true
+            },
+            
+        };
         _aiSearchClient = new SearchClient(searchEndpoint, _azureOptions.AISearchIndex, searchCredential, searchClientOptions);
             
             
@@ -110,6 +133,8 @@ public class SearchService: ISearchService
                 orderby = $"geo.distance(GEOPOINT_LATLONG, geography'POINT({geolocation.Latitude} {geolocation.Longitude})')";
 
             var embeddings = embedding.Value.ToFloats();
+
+            var embeddingsJSON = JsonSerializer.Serialize(embeddings);
             
             var search = await _aiSearchClient.SearchAsync<AiSearchCourse>(
                 request.Query,
@@ -122,22 +147,13 @@ public class SearchService: ISearchService
                             new VectorizedQuery(embeddings)
                             {
                                 KNearestNeighborsCount = _azureOptions.KNN,
-                                Fields = { "WHO_THIS_COURSE_IS_FOR_Vector" },
-                                Weight = 10
-                            },
-                            new VectorizedQuery(embeddings)
-                            {
-                                KNearestNeighborsCount = _azureOptions.KNN,
-                                Fields = { "COURSE_NAME_Vector" },
-                                Weight = 10
+                                Fields = { "COURSE_NAME_Vector", "DESCRIPTION_Vector", "ENTRY_Vector", "SECTOR_Vector", "SSAT1_Vector", "SSAT2_Vector"},
+                                Weight = _azureOptions.Weight,
                             }
                         },
                         
                     },
-                    SemanticSearch = new SemanticSearchOptions()
-                    {
-                        Debug = request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled
-                    },
+                    Debug = request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled,
                     SearchFields =
                     {
                         nameof(AiSearchCourse.COURSE_NAME), 
@@ -147,10 +163,6 @@ public class SearchService: ISearchService
                         // nameof(AiSearchCourse.TOPIC_MODELING),
                         //nameof(AiSearchCourse.SSAT1),
                         //nameof(AiSearchCourse.SSAT2)
-                    },
-                    HighlightFields = { 
-                        nameof(AiSearchCourse.COURSE_NAME), 
-                        nameof(AiSearchCourse.WHO_THIS_COURSE_IS_FOR) 
                     },
                     Facets =
                     {
@@ -166,7 +178,18 @@ public class SearchService: ISearchService
                     Size = request.PageSize,
                     Skip = (request.Page - 1) * request.PageSize,
                     SessionId = request.SessionId,
-                    OrderBy = { orderby }
+                    OrderBy = { orderby },
+                    SemanticSearch = new SemanticSearchOptions()
+                    {
+                        SemanticConfigurationName = "Course Name and Description",
+                    },
+                    SearchMode = SearchMode.Any,
+                    HighlightFields =
+                    {
+                        nameof(AiSearchCourse.COURSE_NAME), 
+                        nameof(AiSearchCourse.WHO_THIS_COURSE_IS_FOR)
+                    },
+                    QueryType = SearchQueryType.Semantic
                     
                 }
                 );
@@ -187,10 +210,9 @@ public class SearchService: ISearchService
 
                 result.Courses.Add(new Course(
                     course: searchResult.Document,
-                    score: searchResult.Score,
+                    score: searchResult.SemanticSearch.RerankerScore,
                     location: geolocation,
-                    debugInfo: searchResult.DocumentDebugInfo,
-                    highlights: searchResult.Highlights));
+                    debugInfo: searchResult.DocumentDebugInfo));
 
             }
 

@@ -350,9 +350,6 @@ MigrationBackup/
 .vscode/
 *.swp
 
-src/web/CareLeavers.Web/wwwroot
-
-
 # Node.js dependencies
 .ntvs_analysis.dat
 node_modules/
@@ -402,7 +399,9 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+.terraform/
+
 
 src/**/*.css.map
 src/**/*.css%  
-/wwwroot/
+wwwroot/
