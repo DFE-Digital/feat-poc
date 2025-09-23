@@ -60,7 +60,7 @@ public class SearchService: ISearchService
         Uri embeddingsEndpoint = new Uri(_azureOptions.OpenAIEndpoint);
         AzureKeyCredential openAiCredential = new AzureKeyCredential(_azureOptions.OpenAIKey);
         _openAiClient = new AzureOpenAIClient(embeddingsEndpoint, openAiCredential);
-        _embeddingClient = _openAiClient.GetEmbeddingClient("text-embedding-3-large");
+        _embeddingClient = _openAiClient.GetEmbeddingClient("text-embedding-ada-002");
 
         // Create our http client for geo lookups
         _httpClientRepository = httpClientRepository;
@@ -133,6 +133,8 @@ public class SearchService: ISearchService
                 orderby = $"geo.distance(GEOPOINT_LATLONG, geography'POINT({geolocation.Latitude} {geolocation.Longitude})')";
 
             var embeddings = embedding.Value.ToFloats();
+
+            var embeddingsJSON = JsonSerializer.Serialize(embeddings);
             
             var search = await _aiSearchClient.SearchAsync<AiSearchCourse>(
                 request.Query,
@@ -146,12 +148,12 @@ public class SearchService: ISearchService
                             {
                                 KNearestNeighborsCount = _azureOptions.KNN,
                                 Fields = { "COURSE_NAME_Vector", "DESCRIPTION_Vector", "ENTRY_Vector", "SECTOR_Vector", "SSAT1_Vector", "SSAT2_Vector"},
-                                Weight = 10,
+                                Weight = _azureOptions.Weight,
                             }
                         },
                         
                     },
-                    Debug = QueryDebugMode.All, // request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled,
+                    Debug = request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled,
                     SearchFields =
                     {
                         nameof(AiSearchCourse.COURSE_NAME), 
@@ -179,7 +181,13 @@ public class SearchService: ISearchService
                     OrderBy = { orderby },
                     SemanticSearch = new SemanticSearchOptions()
                     {
-                        SemanticConfigurationName = "Course Name and Description"
+                        SemanticConfigurationName = "Course Name and Description",
+                    },
+                    SearchMode = SearchMode.Any,
+                    HighlightFields =
+                    {
+                        nameof(AiSearchCourse.COURSE_NAME), 
+                        nameof(AiSearchCourse.WHO_THIS_COURSE_IS_FOR)
                     },
                     QueryType = SearchQueryType.Semantic
                     
