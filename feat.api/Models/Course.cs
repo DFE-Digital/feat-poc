@@ -32,10 +32,11 @@ public class Course
         SkillsRequired = CleanString(course.SKILLS_REQUIRED);
         Name = CleanString(course.STANDARD_NAME);
         Website = CleanString(course.WEBSITE);
-        if (course.GEOPOINT_LATLONG is { IsEmpty: false })
+        if (course.GEOPOINT_LATLONG != null)
         {
-            Latitude = course.GEOPOINT_LATLONG.Latitude;
-            Longitude = course.GEOPOINT_LATLONG.Longitude;
+            // Swapping these at present, as there appears to be a bug in the deserialisation
+            Latitude = course.GEOPOINT_LATLONG.Longitude;
+            Longitude = course.GEOPOINT_LATLONG.Latitude;
         }
         else
         {
