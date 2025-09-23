@@ -1,5 +1,6 @@
 
 using System.Text.Json.Serialization;
+using Microsoft.Spatial;
 
 namespace feat.api.Models;
 
@@ -51,9 +52,7 @@ public class AiSearchCourse
 
     public string WEBSITE { get; set; }
 
-    public string CALC_LAT { get; set; }
-
-    public string CALC_LONG { get; set; }
+    public GeographyPoint? GEOPOINT_LATLONG { get; set; }
 
     public string empty_postcode_flag { get; set; }
 

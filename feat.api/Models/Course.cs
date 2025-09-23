@@ -7,7 +7,7 @@ namespace feat.api.Models;
 
 public class Course
 {
-    public Course(AiSearchCourse course, double? score, Geolocation? location, DocumentDebugInfo? debugInfo, IDictionary<string, IList<string>> highlights)
+    public Course(AiSearchCourse course, double? score, Geolocation? location, DocumentDebugInfo? debugInfo)
     {
         Id = course.id;
         ProviderName = course.PROVIDER_NAME;
@@ -32,10 +32,16 @@ public class Course
         SkillsRequired = CleanString(course.SKILLS_REQUIRED);
         Name = CleanString(course.STANDARD_NAME);
         Website = CleanString(course.WEBSITE);
-        if (double.TryParse(course.CALC_LAT, out var lat))
-            Latitude = double.Parse(course.CALC_LAT);
-        if (double.TryParse(course.CALC_LONG, out var lon))
-            Longitude = double.Parse(course.CALC_LONG);
+        if (course.GEOPOINT_LATLONG is { IsEmpty: false })
+        {
+            Latitude = course.GEOPOINT_LATLONG.Latitude;
+            Longitude = course.GEOPOINT_LATLONG.Longitude;
+        }
+        else
+        {
+            Latitude = null;
+            Longitude = null;
+        }
         PostcodeEmpty = ToBoolean(course.empty_postcode_flag);
         LearningAIMTitle = CleanString(course.LEARNING_AIM_TITLE);
         SSAT1 = CleanString(course.SSAT1);
@@ -49,12 +55,6 @@ public class Course
         EmployerName = CleanString(course.EMPLOYER_NAME);
         CourseName = CleanString(course.COURSE_NAME);
         WhoThisCourseIsFor = CleanString(course.WHO_THIS_COURSE_IS_FOR);
-
-        if (double.IsNaN(Latitude.Value))
-            Latitude = null;
-        
-        if (double.IsNaN(Longitude.Value))
-            Longitude = null;
         
         if (Latitude.HasValue && Longitude.HasValue && location != null)
         {
@@ -66,11 +66,6 @@ public class Course
         else
         {
             Distance = null;
-        }
-
-        if (highlights is { Count: not 0 })
-        {
-            Highlights = highlights;
         }
         
         Score = score;
@@ -162,8 +157,6 @@ public class Course
     public string Id { get; set; }
 
     public DocumentDebugInfo? DebugInfo { get; set; } = null;
-    
-    public IDictionary<string, IList<string>> Highlights { get; set; } = new Dictionary<string, IList<string>>();
     
     private bool ToBoolean(string value)
     {
