@@ -60,7 +60,7 @@ public class SearchService: ISearchService
         Uri embeddingsEndpoint = new Uri(_azureOptions.OpenAIEndpoint);
         AzureKeyCredential openAiCredential = new AzureKeyCredential(_azureOptions.OpenAIKey);
         _openAiClient = new AzureOpenAIClient(embeddingsEndpoint, openAiCredential);
-        _embeddingClient = _openAiClient.GetEmbeddingClient("text-embedding-ada-002");
+        _embeddingClient = _openAiClient.GetEmbeddingClient("text-embedding-3-large");
 
         // Create our http client for geo lookups
         _httpClientRepository = httpClientRepository;
