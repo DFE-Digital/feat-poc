@@ -19,7 +19,7 @@ public class Search
     
     public SearchType? SearchType { get; set; }
 
-    public bool IncludeOnlineCourses { get; set; } = true;
+    public bool IncludeOnlineCourses { get; set; } = false;
     
     public bool Debug { get; set; } = false;
 

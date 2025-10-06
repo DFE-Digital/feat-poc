@@ -60,7 +60,7 @@ public class SearchService: ISearchService
         Uri embeddingsEndpoint = new Uri(_azureOptions.OpenAIEndpoint);
         AzureKeyCredential openAiCredential = new AzureKeyCredential(_azureOptions.OpenAIKey);
         _openAiClient = new AzureOpenAIClient(embeddingsEndpoint, openAiCredential);
-        _embeddingClient = _openAiClient.GetEmbeddingClient("text-embedding-3-large");
+        _embeddingClient = _openAiClient.GetEmbeddingClient("text-embedding-ada-002");
 
         // Create our http client for geo lookups
         _httpClientRepository = httpClientRepository;
@@ -128,6 +128,8 @@ public class SearchService: ISearchService
             {
                 filter = request.IncludeOnlineCourses ? "DELIVERY_MODE eq 'Online'" : "DELIVERY_MODE ne 'Online'";
             }
+            
+            
 
             if (geolocation != null && request.OrderBy == OrderBy.Distance)
                 orderby = $"geo.distance(GEOPOINT_LATLONG, geography'POINT({geolocation.Latitude} {geolocation.Longitude})')";
@@ -149,20 +151,16 @@ public class SearchService: ISearchService
                                 KNearestNeighborsCount = _azureOptions.KNN,
                                 Fields = { "COURSE_NAME_Vector", "DESCRIPTION_Vector", "ENTRY_Vector", "SECTOR_Vector", "SSAT1_Vector", "SSAT2_Vector"},
                                 Weight = _azureOptions.Weight,
+                                Threshold = new VectorSimilarityThreshold(0.3),
                             }
                         },
                         
                     },
-                    Debug = request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled,
+                    
                     SearchFields =
                     {
                         nameof(AiSearchCourse.COURSE_NAME), 
-                        nameof(AiSearchCourse.WHO_THIS_COURSE_IS_FOR), 
-                        // nameof(AiSearchCourse.LEARNING_AIM_TITLE),
-                        // nameof(AiSearchCourse.LEARNING_DIRECT_CLASSIFICATION),
-                        // nameof(AiSearchCourse.TOPIC_MODELING),
-                        //nameof(AiSearchCourse.SSAT1),
-                        //nameof(AiSearchCourse.SSAT2)
+                        nameof(AiSearchCourse.WHO_THIS_COURSE_IS_FOR)
                     },
                     Facets =
                     {
@@ -182,6 +180,7 @@ public class SearchService: ISearchService
                     SemanticSearch = new SemanticSearchOptions()
                     {
                         SemanticConfigurationName = "Course Name and Description",
+                        Debug = request.Debug.GetValueOrDefault(false) ? QueryDebugMode.All : QueryDebugMode.Disabled,
                     },
                     SearchMode = SearchMode.Any,
                     HighlightFields =
@@ -189,7 +188,8 @@ public class SearchService: ISearchService
                         nameof(AiSearchCourse.COURSE_NAME), 
                         nameof(AiSearchCourse.WHO_THIS_COURSE_IS_FOR)
                     },
-                    QueryType = SearchQueryType.Semantic
+                    QueryType = SearchQueryType.Semantic,
+                    
                     
                 }
                 );
